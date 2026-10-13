@@ -11,7 +11,10 @@ class WebSocket {
   String _error = '';
 
   WebSocket._() {
-    _channel = WebSocketChannel.connect(Uri.parse('ws://127.0.0.1:8000/ws'));
+    _channel = WebSocketChannel.connect(
+      // Uri.parse('ws://127.0.0.1:8000/ws')
+      _convertUri(),
+    );
     _channel?.ready.then((_) {}).catchError((e) {
       _error = 'WebSocket error => $e';
     });
@@ -25,9 +28,27 @@ class WebSocket {
 
   Stream get events => _events;
 
+  Uri _convertUri() {
+    final baseUri = Uri.base;
+    
+    return baseUri.replace(
+      scheme: switch (baseUri.scheme) {
+        'https' => 'wss',
+        'http' => 'ws',
+        _ => throw UnsupportedError(
+            'Esquema não suportado: ${baseUri.scheme}',
+          ),
+      },
+      path: '/ws'
+    );
+  }
+
   Future<void> _connect() async {
     while (_connectionAtempts > 0) {
-      _channel = WebSocketChannel.connect(Uri.parse('ws://127.0.0.1:8000/ws'));
+      _channel = WebSocketChannel.connect(
+        // Uri.parse('ws://127.0.0.1:8000/ws')
+        _convertUri(),
+      );
 
       try {
         await _channel!.ready;

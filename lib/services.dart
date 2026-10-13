@@ -10,7 +10,8 @@ Future<dynamic> fetchData(
 }) async {
   final request = http.Request(
     method.toUpperCase(),
-    Uri.parse("http://127.0.0.1:8000$endpoint"),
+    // Uri.parse("http://127.0.0.1:8000$endpoint"),
+    Uri.base.resolve(endpoint)
   );
 
   if (data != null) {
@@ -36,7 +37,8 @@ Future<dynamic> fetchData(
 Future<dynamic> uploadAudio(Uint8List data) async {
   final request = http.MultipartRequest(
     'POST',
-    Uri.parse('http://127.0.0.1:8000/stt'),
+    // Uri.parse('http://127.0.0.1:8000/stt'),
+    Uri.base.resolve('/stt')
   );
 
   request.files.add(
@@ -65,7 +67,8 @@ Future<dynamic> uploadAudio(Uint8List data) async {
 Future<dynamic> uploadFile(List<AttachmentLocal> files) async {
   final request = http.MultipartRequest(
     'POST',
-    Uri.parse('http://127.0.0.1:8000/uploads'),
+    // Uri.parse('http://127.0.0.1:8000/uploads'),
+    Uri.base.resolve('/uploads')
   );
 
   for (final file in files) {
@@ -95,7 +98,8 @@ Future<dynamic> uploadFile(List<AttachmentLocal> files) async {
 Future<AttachmentRemote> getFile(String fileName) async {
   final request = http.Request(
     'GET',
-    Uri.parse("http://127.0.0.1:8000/uploads/$fileName"),
+    // Uri.parse("http://127.0.0.1:8000/uploads/$fileName"),
+    Uri.base.resolve('/uploads/$fileName')
   );
 
   final response = await request.send();
@@ -118,7 +122,11 @@ Future<Uint8List?> fetchTTSData({
   required int chatId,
   required int msgId,
 }) async {
-  final request = http.Request('POST', Uri.parse('http://127.0.0.1:8000/tts'));
+  final request = http.Request(
+    'POST',
+    // Uri.parse('http://127.0.0.1:8000/tts')
+    Uri.base.resolve('/tts')
+  );
 
   request.headers['content-type'] = 'application/json';
 
@@ -143,7 +151,8 @@ Stream<String> fetchStreamData(Map<String, dynamic> data) async* {
 
   final request = http.Request(
     'POST',
-    Uri.parse('http://127.0.0.1:8000/v1/chat/completions'),
+    // Uri.parse('http://127.0.0.1:8000/v1/chat/completions'),
+    Uri.base.resolve('/v1/chat/completions')
   );
 
   request.bodyBytes = utf8.encode(jsonEncode(data));
