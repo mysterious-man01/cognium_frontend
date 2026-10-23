@@ -12,7 +12,6 @@ class WebSocket {
 
   WebSocket._() {
     _channel = WebSocketChannel.connect(
-      // Uri.parse('ws://127.0.0.1:8000/ws')
       _convertUri(),
     );
     _channel?.ready.then((_) {}).catchError((e) {
@@ -46,7 +45,6 @@ class WebSocket {
   Future<void> _connect() async {
     while (_connectionAtempts > 0) {
       _channel = WebSocketChannel.connect(
-        // Uri.parse('ws://127.0.0.1:8000/ws')
         _convertUri(),
       );
 

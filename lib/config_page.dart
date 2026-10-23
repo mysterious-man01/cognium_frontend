@@ -39,6 +39,8 @@ class _ConfigPageState extends State<ConfigPage> {
 
   final List<dynamic> voices = [];
 
+  final List<Map<String, Map>> mcpServers = [];
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +52,7 @@ class _ConfigPageState extends State<ConfigPage> {
     getTTSModels();
     getVoices();
     getSTTModels();
+    getMCPServers();
   }
 
   Future<void> initConfig() async {
@@ -155,6 +158,18 @@ class _ConfigPageState extends State<ConfigPage> {
       }
     } catch (e) {
       print("Error: ConfigPage -> getVoices => $e");
+    }
+  }
+
+  Future<void> getMCPServers() async {
+    try {
+      final result = await fetchData('/mcp', 'GET');
+
+      if (result is Map && result.containsKey('mcpServers')) {
+        setState(() => mcpServers.addAll(result['mcpServers']));
+      }
+    } catch (e) {
+      print("Error: ConfigPage -> getMCPServers => $e");
     }
   }
 
@@ -582,6 +597,114 @@ class _ConfigPageState extends State<ConfigPage> {
                   ],
                 ),
               ),
+
+              // MCP Configuration
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: ExpansionTile(
+                  title: const Text('MCP'),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Card(
+                        child: ListTile(
+                          leading: const Icon(Icons.cable),
+                          title: const Text('Add MCP server'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _mcpServerDialog(context),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: mcpServers.length,
+                      itemBuilder: (_, index) {
+                        final server = mcpServers[index];
+                        final serverName = server.keys.firstOrNull;
+
+                        return Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.dns),
+                            title: Text(serverName ?? "Unnamed server"),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () => _mcpServerDialog(
+                                    context,
+                                    serverName: serverName ?? '',
+                                    command:
+                                        server[serverName]?['command'] ?? '',
+                                    script: server[serverName]?['script'] ?? '',
+                                  ),
+                                  icon: const Icon(Icons.edit),
+                                ),
+
+                                IconButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (dialogContext) {
+                                        return AlertDialog(
+                                          title: const Text(
+                                            "Remove MCP Server",
+                                          ),
+                                          content: Text(
+                                            "Do you want to remove ${serverName ?? ''}?",
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text("No"),
+                                              onPressed: () => Navigator.of(
+                                                dialogContext,
+                                              ).pop(),
+                                            ),
+
+                                            FilledButton(
+                                              child: const Text("Yes"),
+                                              onPressed: () {
+                                                if (serverName == null) return;
+
+                                                fetchData(
+                                                  '/mcp',
+                                                  'DELETE',
+                                                  data: {
+                                                    'server_name': serverName,
+                                                  },
+                                                );
+
+                                                if (!context.mounted) return;
+
+                                                setState(() {
+                                                  mcpServers.removeAt(index);
+                                                });
+
+                                                Navigator.of(
+                                                  dialogContext,
+                                                ).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  icon: const Icon(Icons.close),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
               SizedBox(height: 40),
             ],
           ),
@@ -601,5 +724,139 @@ class _ConfigPageState extends State<ConfigPage> {
         ),
       ],
     );
+  }
+
+  void _mcpServerDialog(
+    BuildContext context, {
+    String? serverName,
+    String? command,
+    String? script,
+  }) {
+    final serverNameController = TextEditingController();
+    final commandController = TextEditingController();
+    final scriptController = TextEditingController();
+
+    final formKey = GlobalKey<FormState>();
+
+    serverNameController.text = serverName ?? '';
+    commandController.text = command ?? '';
+    scriptController.text = script ?? '';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            serverName == null ? "Add MCP Server" : "Edit MCP Server",
+          ),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: serverNameController,
+                    decoration: const InputDecoration(
+                      labelText: "Server name",
+                      hintText: "e.g date",
+                      prefixIcon: Icon(Icons.dns),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Enter a server name";
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: commandController,
+                    decoration: const InputDecoration(
+                      labelText: "Command",
+                      hintText: "e.g. /usr/bin/python3",
+                      prefixIcon: Icon(Icons.terminal),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Enter a command";
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: scriptController,
+                    decoration: const InputDecoration(
+                      labelText: "Script path",
+                      hintText: "/path/to/mcp_server.py",
+                      prefixIcon: Icon(Icons.insert_drive_file),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Enter the script path";
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+
+            FilledButton(
+              onPressed: () {
+                if (!formKey.currentState!.validate()) {
+                  return;
+                }
+
+                final serverName = serverNameController.text.trim();
+                final command = commandController.text.trim();
+                final script = scriptController.text.trim();
+
+                final payload = {
+                  serverName: {'command': command, 'script': script},
+                };
+
+                fetchData('/mcp', 'PUT', data: {'server_def': payload});
+
+                final index = mcpServers.indexWhere(
+                  (e) => e.containsKey(serverName),
+                );
+
+                setState(() {
+                  if (index == -1) {
+                    mcpServers.add(payload);
+                  } else {
+                    mcpServers[index] = payload;
+                  }
+                });
+
+                if (!context.mounted) return;
+
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(serverName == null ? "Add" : "Edit"),
+            ),
+          ],
+        );
+      },
+    ).whenComplete(() {
+      serverNameController.dispose();
+      commandController.dispose();
+      scriptController.dispose();
+    });
   }
 }

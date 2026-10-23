@@ -10,7 +10,6 @@ Future<dynamic> fetchData(
 }) async {
   final request = http.Request(
     method.toUpperCase(),
-    // Uri.parse("http://127.0.0.1:8000$endpoint"),
     Uri.base.resolve(endpoint)
   );
 
@@ -37,7 +36,6 @@ Future<dynamic> fetchData(
 Future<dynamic> uploadAudio(Uint8List data) async {
   final request = http.MultipartRequest(
     'POST',
-    // Uri.parse('http://127.0.0.1:8000/stt'),
     Uri.base.resolve('/stt')
   );
 
@@ -67,7 +65,6 @@ Future<dynamic> uploadAudio(Uint8List data) async {
 Future<dynamic> uploadFile(List<AttachmentLocal> files) async {
   final request = http.MultipartRequest(
     'POST',
-    // Uri.parse('http://127.0.0.1:8000/uploads'),
     Uri.base.resolve('/uploads')
   );
 
@@ -98,7 +95,6 @@ Future<dynamic> uploadFile(List<AttachmentLocal> files) async {
 Future<AttachmentRemote> getFile(String fileName) async {
   final request = http.Request(
     'GET',
-    // Uri.parse("http://127.0.0.1:8000/uploads/$fileName"),
     Uri.base.resolve('/uploads/$fileName')
   );
 
@@ -124,7 +120,6 @@ Future<Uint8List?> fetchTTSData({
 }) async {
   final request = http.Request(
     'POST',
-    // Uri.parse('http://127.0.0.1:8000/tts')
     Uri.base.resolve('/tts')
   );
 
@@ -143,32 +138,5 @@ Future<Uint8List?> fetchTTSData({
   } catch (e) {
     print('Error: fetchTTSData -> $e');
     return null;
-  }
-}
-
-Stream<String> fetchStreamData(Map<String, dynamic> data) async* {
-  final client = http.Client();
-
-  final request = http.Request(
-    'POST',
-    // Uri.parse('http://127.0.0.1:8000/v1/chat/completions'),
-    Uri.base.resolve('/v1/chat/completions')
-  );
-
-  request.bodyBytes = utf8.encode(jsonEncode(data));
-  request.headers['content-type'] = 'application/json';
-
-  try {
-    final response = await client.send(request);
-
-    if (response.statusCode == 200) {
-      await for (final chunk in response.stream.transform(utf8.decoder)) {
-        yield chunk;
-      }
-    } else {
-      throw Exception("Failed to fetch data\nCode: ${response.statusCode}");
-    }
-  } catch (e) {
-    throw Exception("Filed to connect to the server. Error: $e");
   }
 }
